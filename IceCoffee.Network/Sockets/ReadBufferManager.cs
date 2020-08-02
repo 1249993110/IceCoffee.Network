@@ -302,6 +302,7 @@ namespace IceCoffee.Network.Sockets
             }
             else
             {
+                _collectSaea.Invoke(saea);
                 throw new NetworkException(
                     string.Format("读取缓冲区溢出，会话ID: {0},IPEndPoint: {1} 即将关闭",
                     _session.SessionID.ToString(), _session.RemoteIPEndPoint.ToString()))

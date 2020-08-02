@@ -220,9 +220,10 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpClient
         [CatchException(ErrorMessage = "异步连接服务端异常")]
         private void OnConnectAsyncRequestCompleted(object sender, SocketAsyncEventArgs e)
         {
-            if (e.SocketError != SocketError.Success)
+            SocketError socketError = e.SocketError;
+            if (socketError != SocketError.Success)
             {
-                throw new NetworkException("Socket已关闭，重叠的操作被中止，SocketError：" + e.SocketError.ToString());
+                throw new NetworkException("Socket已关闭，重叠的操作被中止，SocketError：" + socketError.ToString());
             }
 
             int sessionID = _socketConnecter.Handle.ToInt32();
@@ -244,7 +245,7 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpClient
             }
             catch
             {
-                OnInternalClose(e);
+                OnInternalClose(socketError);
                 throw;
             }
         }
@@ -252,7 +253,8 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpClient
         [CatchException(ErrorMessage = "异步接收数据异常")]
         private void OnRecvAsyncRequestCompleted(object sender, SocketAsyncEventArgs e)
         {
-            if (e.BytesTransferred > 0 && e.SocketError == SocketError.Success)
+            SocketError socketError = e.SocketError;
+            if (e.BytesTransferred > 0 && socketError == SocketError.Success)
             {
                 try
                 {
@@ -261,7 +263,7 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpClient
                     // 主动关闭会话
                     if (_session.socket == null)
                     {
-                        OnInternalClose(e);
+                        OnInternalClose(socketError);
                     }
                     else
                     {
@@ -275,34 +277,26 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpClient
                 }
                 catch
                 {
-                    OnInternalClose(e);
+                    OnInternalClose(socketError);
                     throw;
                 }
             }
             else
             {
-                OnInternalClose(e);
+                OnInternalClose(socketError);
             }
         }
 
         [CatchException(ErrorMessage = "会话即将关闭异常")]
-        private void OnInternalClose(SocketAsyncEventArgs e, bool collectSaea = true)
+        private void OnInternalClose(SocketError socketError)
         {
             if (ConnectionState == ConnectionState.Connected) //已连接
             {
                 _session.Close();
-                if(collectSaea)
-                {
-                    _recvSaeaPool.Put(e);
-                }
-                else
-                {
-                    e.Dispose();
-                }
 
                 OnInternalConnectionStateChanged(ConnectionState.Disconnected);
-                OnDisconnected(e.SocketError);
-                _session.Detach(e.SocketError);
+                OnDisconnected(socketError);
+                _session.Detach(socketError);
 
                 _session.ReadBuffer.CollectAllRecvSaeaAndReset();
 
@@ -349,7 +343,7 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpClient
             }
             else
             {
-                OnInternalClose(e);
+                OnInternalClose(e.SocketError);
             }
             _sendSaeaPool.Put(e);
         }
@@ -362,9 +356,10 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpClient
             }
             else
             {
-                OnInternalClose(e, false);
+                OnInternalClose(e.SocketError);
             }
             e.BufferList = null;
+            e.Dispose();
         }
 
         private void AutoReconnect()

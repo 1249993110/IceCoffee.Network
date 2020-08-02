@@ -209,114 +209,117 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpServer
         private void OnAcceptAsyncRequestCompleted(object sender, SocketAsyncEventArgs e)
         {
             Socket socket = e.AcceptSocket;
-            if (_isListening)
-            {
-                // 异常socket连接
-                if (e.SocketError != SocketError.Success || socket.Connected == false)
-                {
-                    throw new NetworkException("异常socket连接，SocketError：" + e.SocketError.ToString());
-                }
-            }
-            else
+            SocketError socketError = e.SocketError;
+
+            if (_isListening == false)
             {
                 return;
             }
-
-            _acceptEvent.Set();
-
-            TSession session = _sessionPool.Take();
-
-            int sessionID = socket.Handle.ToInt32();
-
-            SocketAsyncEventArgs receiveSaea = _recvSaeaPool.Take();
-
-            receiveSaea.UserToken = session;
-
-            session.Attach(socket, sessionID);
-
-            bool flag = _sessions.ContainsKey(sessionID);
-            if (flag)
+            else
             {
-                TSession tempSession;
-                _sessions.TryRemove(sessionID, out tempSession);
-            }
-
-            _sessions.TryAdd(sessionID, session);
-
-            try
-            {
-                OnNewSessionSetup(session);
-                if (session.socket.ReceiveAsync(receiveSaea) == false)
+                // 异常socket连接
+                if (socketError != SocketError.Success || socket.Connected == false)
                 {
-                    Task.Run(() =>
+                    throw new NetworkException("异常socket连接，SocketError：" + socketError.ToString());
+                }
+                else
+                {
+                    _acceptEvent.Set();
+
+                    TSession session = _sessionPool.Take();
+
+                    int sessionID = socket.Handle.ToInt32();
+
+                    SocketAsyncEventArgs receiveSaea = _recvSaeaPool.Take();
+
+                    receiveSaea.UserToken = session;
+
+                    session.Attach(socket, sessionID);
+
+                    bool flag = _sessions.ContainsKey(sessionID);
+                    if (flag)
                     {
-                        OnRecvAsyncRequestCompleted(session.socket, receiveSaea);
-                    });
+                        TSession tempSession;
+                        _sessions.TryRemove(sessionID, out tempSession);
+                    }
+
+                    _sessions.TryAdd(sessionID, session);
+
+                    try
+                    {
+                        OnNewSessionSetup(session);
+                        if (session.socket.ReceiveAsync(receiveSaea) == false)
+                        {
+                            Task.Run(() =>
+                            {
+                                OnRecvAsyncRequestCompleted(session.socket, receiveSaea);
+                            });
+                        }
+                    }
+                    catch
+                    {
+                        OnInternalClose(session, socketError);
+                        throw;
+                    }
+
+                    if (flag)
+                    {
+                        throw new NetworkException(string.Format("添加会话错误，sessionID: {0} 已存在", session.SessionID.ToString()));
+                    }
                 }
             }
-            catch
-            {
-                OnInternalClose(session, e);
-                throw;
-            }
-            if (flag)
-                throw new NetworkException(string.Format("添加会话错误，sessionID: {0} 已存在", session.SessionID.ToString()));
         }
 
         [CatchException(ErrorMessage = "异步接收数据异常")]
         private void OnRecvAsyncRequestCompleted(object sender, SocketAsyncEventArgs e)
         {
-            TSession session = (TSession)e.UserToken;
-            if (e.BytesTransferred > 0 && e.SocketError == SocketError.Success)
+            TSession session = e.UserToken as TSession;
+            SocketError socketError = e.SocketError;
+            if (e.BytesTransferred > 0 && socketError == SocketError.Success)
             {
                 try
                 {
                     session.ReadBuffer.CacheSaea(e);
 
-                    SocketAsyncEventArgs receiveSaea = _recvSaeaPool.Take();
-                    receiveSaea.UserToken = session;
-
                     // 服务端主动关闭会话
                     if (session.socket == null)
                     {
-                        OnInternalClose(session, e);
+                        OnInternalClose(session, socketError);
                     }
-                    else if (session.socket.ReceiveAsync(receiveSaea) == false)
+                    else
                     {
-                        OnRecvAsyncRequestCompleted(sender, receiveSaea);
+                        SocketAsyncEventArgs receiveSaea = _recvSaeaPool.Take();
+                        receiveSaea.UserToken = session;
+
+                        if (session.socket.ReceiveAsync(receiveSaea) == false)
+                        {
+                            OnRecvAsyncRequestCompleted(sender, receiveSaea);
+                        }
                     }
                 }
                 catch
                 {
-                    OnInternalClose(session, e);
+                    OnInternalClose(session, socketError);
                     throw;
                 }
             }
             else
             {
-                OnInternalClose(session, e);
+                OnInternalClose(session, socketError);
             }
         }
 
         [CatchException(ErrorMessage = "会话即将关闭异常")]
-        private void OnInternalClose(TSession session, SocketAsyncEventArgs e, bool collectSaea = true)
+        private void OnInternalClose(TSession session, SocketError socketError)
         {
             if (_isListening) // 不是正在停止监听
             {
                 session.Close();
-                if(collectSaea)
-                {
-                    _recvSaeaPool.Put(e);
-                }
-                else
-                {
-                    e.Dispose();
-                }
 
                 if (_sessions.TryRemove(session.SessionID, out session))
                 {
-                    OnSessionClosed(session, e.SocketError);
-                    session.Detach(e.SocketError);
+                    OnSessionClosed(session, socketError);
+                    session.Detach(socketError);
 
                     CollectSession(session);
                 }
@@ -325,7 +328,6 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpServer
                     CollectSession(session);
                     throw new NetworkException("从会话列表中移除一个不存在的会话");
                 }
-                
             }
         }
 
@@ -338,11 +340,12 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpServer
         [CatchException(ErrorMessage = "异步发送数据异常")]
         private void OnInternalSend(TSession session, byte[] data)
         {
-            SocketAsyncEventArgs sendSaea = _sendSaeaPool.Take();
-            sendSaea.UserToken = session;
+            SocketAsyncEventArgs sendSaea = _sendSaeaPool.Take();            
             long dataLen = data.LongLength;
+
             if (dataLen <= _sendBufferSize)//如果data长度小于发送缓冲区大小，此时dataLen应不大于int.Max
             {
+                sendSaea.UserToken = session;
                 Array.Copy(data, 0, sendSaea.Buffer, 0, (int)dataLen);
                 sendSaea.SetBuffer(0, (int)dataLen);
                 if (session.socket.SendAsync(sendSaea) == false)
@@ -352,43 +355,44 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpServer
             }
             else//否则创建一个新的BufferList进行发送
             {
-                sendSaea.Completed -= OnSendAsyncRequestCompleted;
-                sendSaea.Completed += OnSendAsyncRequestCompleted_UseBufferList;
-                sendSaea.SetBuffer(null, 0, 0);
-                sendSaea.BufferList = new ArraySegment<byte>[1] { new ArraySegment<byte>(data) };
-                if (session.socket.SendAsync(sendSaea) == false)
+                SocketAsyncEventArgs temp_sendSaea = new SocketAsyncEventArgs();
+                temp_sendSaea.UserToken = session;
+                temp_sendSaea.Completed += OnSendAsyncRequestCompleted_UseBufferList;
+                temp_sendSaea.BufferList = new ArraySegment<byte>[1] { new ArraySegment<byte>(data) };
+                if (session.socket.SendAsync(temp_sendSaea) == false)
                 {
-                    OnSendAsyncRequestCompleted_UseBufferList(session.socket, sendSaea);
+                    OnSendAsyncRequestCompleted_UseBufferList(session.socket, temp_sendSaea);
                 }
             }
         }
 
         private void OnSendAsyncRequestCompleted(object sender, SocketAsyncEventArgs e)
         {
-            TSession session = (TSession)e.UserToken;
+            TSession session = e.UserToken as TSession;
             if (e.SocketError == SocketError.Success)
             {
                 //session.OnSent();
             }
             else
             {
-                OnInternalClose(session, e);
+                OnInternalClose(session, e.SocketError);
             }
             _sendSaeaPool.Put(e);
         }
 
         private void OnSendAsyncRequestCompleted_UseBufferList(object sender, SocketAsyncEventArgs e)
         {
-            TSession session = (TSession)e.UserToken;
+            TSession session = e.UserToken as TSession;
             if (e.SocketError == SocketError.Success)
             {
                 //session.OnSent();
             }
             else
             {
-                OnInternalClose(session, e, false);
+                OnInternalClose(session, e.SocketError);
             }
             e.BufferList = null;
+            e.Dispose();
         }
 
         #endregion 私有方法

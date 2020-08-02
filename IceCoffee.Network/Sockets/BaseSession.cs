@@ -145,7 +145,7 @@ namespace IceCoffee.Network.Sockets
         /// <param name="data"></param>
         public virtual void Send(byte[] data)
         {
-            _sendData.Invoke((TSession)this, data);
+            _sendData.Invoke(this as TSession, data);
         }
 
         /// <summary>

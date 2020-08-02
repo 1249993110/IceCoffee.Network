@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace IceCoffee.Network.Sockets.MulitThreadTcpClient
+﻿namespace IceCoffee.Network.Sockets.MulitThreadTcpClient
 {
     /// <summary>
     /// 连接状态

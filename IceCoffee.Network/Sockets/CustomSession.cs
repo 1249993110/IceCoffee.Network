@@ -1,11 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace IceCoffee.Network.Sockets
 {
@@ -13,11 +9,10 @@ namespace IceCoffee.Network.Sockets
     {
         public bool IsAlive { get; internal set; }
 
-        private int _currentObjlen;
+        private int _currentObjLen;
 
         public CustomSession()
         {
-            
         }
 
         protected override void OnStarted()
@@ -47,15 +42,15 @@ namespace IceCoffee.Network.Sockets
 
             while (readBuffer.BytesAvailable > sizeof(int))
             {
-                if (_currentObjlen == 0)
+                if (_currentObjLen == 0)
                 {
-                    _currentObjlen = BitConverter.ToInt32(readBuffer.Read(sizeof(int)), 0);
+                    _currentObjLen = BitConverter.ToInt32(readBuffer.Read(sizeof(int)), 0);
                 }
-                if (readBuffer.BytesAvailable < _currentObjlen)
+                if (readBuffer.BytesAvailable < _currentObjLen)
                 {
                     return;
                 }
-                using (MemoryStream ms = new MemoryStream(readBuffer.Read(_currentObjlen)))
+                using (MemoryStream ms = new MemoryStream(readBuffer.Read(_currentObjLen)))
                 {
                     IFormatter formatter = new BinaryFormatter();
 
@@ -64,7 +59,7 @@ namespace IceCoffee.Network.Sockets
                     // 41是new object()序列化后的长度
                     if (ms.Length == 41L && result.GetType() == typeof(object))
                     {
-                        if(SocketDispatcher.IsServer)
+                        if (SocketDispatcher.AsServer)
                         {
                             SendHeartbeat();
                         }
@@ -74,13 +69,12 @@ namespace IceCoffee.Network.Sockets
                         this.OnReceived(result);
                     }
                 }
-                _currentObjlen = 0;
-            }           
+                _currentObjLen = 0;
+            }
         }
 
         protected virtual void OnReceived(object obj)
         {
-
         }
 
         /// <summary>

@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace IceCoffee.Network.Sockets.Primitives
 {
@@ -33,6 +29,5 @@ namespace IceCoffee.Network.Sockets.Primitives
         /// 关闭会话
         /// </summary>
         void Close();
-
     }
 }

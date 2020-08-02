@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Sockets;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Net.Sockets;
 using System.Timers;
 
 namespace IceCoffee.Network.Sockets.MulitThreadTcpClient
@@ -18,7 +13,6 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpClient
         /// 心跳包发送周期，单位毫秒，默认6,000毫秒
         /// </summary>
         public int HeartbeatInterval { get; set; } = 60000;
-
 
         public CustomClient()
         {
@@ -42,12 +36,11 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpClient
 
         private void CheckIsAlive(object sender, ElapsedEventArgs e)
         {
-            if(Session.IsAlive == false)
+            if (Session.IsAlive == false)
             {
                 Session.SendHeartbeat();
             }
             Session.IsAlive = false;
         }
-
     }
 }

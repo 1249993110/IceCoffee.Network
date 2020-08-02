@@ -4,9 +4,9 @@
     <TargetFrameworks>net45;netstandard2.0;netstandard2.1</TargetFrameworks>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Folder Include="Sockets\Serialize\" />
-  </ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net45|AnyCPU'">
+    <DocumentationFile>G:\C#Tools\IceCoffee\IceCoffee.Network\IceCoffee.Network\IceCoffee.Network.xml</DocumentationFile>
+  </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="PostSharp" Version="6.6.11" />

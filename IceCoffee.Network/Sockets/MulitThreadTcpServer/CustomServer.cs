@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Timers;
 
 namespace IceCoffee.Network.Sockets.MulitThreadTcpServer
@@ -22,7 +18,7 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpServer
         /// 心跳包检查周期 单位毫秒，默认180,000毫秒
         /// </summary>
         public int HeartbeatCheckInterval { get; set; } = 180000;
-        
+
         public CustomServer()
         {
             _heartbeat = new Timer();
@@ -35,7 +31,7 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpServer
             DateTime now = DateTime.Now;
             foreach (var session in Sessions)
             {
-                if((now - session.Value.LastCommunicateTime).TotalMilliseconds >= Timeout)
+                if ((now - session.Value.LastCommunicateTime).TotalMilliseconds >= Timeout)
                 {
                     session.Value.Close();
                 }
@@ -44,7 +40,7 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpServer
 
         protected override void OnStarted()
         {
-            _heartbeat.Enabled = HeartbeatEnable;            
+            _heartbeat.Enabled = HeartbeatEnable;
             _heartbeat.Interval = HeartbeatCheckInterval;
 
             base.OnStarted();

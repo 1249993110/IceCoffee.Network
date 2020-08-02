@@ -1,105 +1,76 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using IceCoffee.Network.CatchException;
+using IceCoffee.Network.Sockets.Primitives;
+using System;
 using System.Net;
 using System.Net.Sockets;
-using System.Threading.Tasks;
-using IceCoffee.Network.CatchException;
-using IceCoffee.Network.Sockets.Primitives;
 
 namespace IceCoffee.Network.Sockets
 {
-    /// <summary>
-    /// 内部数据发送器
-    /// </summary>
-    /// <typeparam name="TSession"></typeparam>
-    /// <param name="session"></param>
-    /// <param name="data"></param>
-    internal delegate void InternalSendDataEventHandler<TSession>(TSession session, byte[] data) where TSession : BaseSession<TSession>, new();
-
-    /// <summary>
-    /// 内部数据接收器
-    /// </summary>
-    internal delegate void InternalReceivedEventHandler();
-
-    public delegate void InitializedEventHandler();
-    public delegate void ReceivedDataEventHandler();
-    public delegate void SessionStartedEventHandler();
-    public delegate void ClosedEventHandler(SocketError closedReason);
-
     public class BaseSession : BaseSession<BaseSession>
     {
-        public BaseSession() { }
     }
 
     public abstract class BaseSession<TSession> : ISession, IExceptionCaught where TSession : BaseSession<TSession>, new()
     {
-        #region 字段 
+        #region 字段
+
         internal Socket socket;
+
+        internal readonly ReadBufferManager readBuffer;
 
         private ISocketDispatcher _socketDispatcher;
 
         private InternalSendDataEventHandler<TSession> _sendData;
 
-        private ExceptionCaughtEventHandler _emitExceptionCaughtSignal;
-
         private int _sessionID;
 
         private DateTime _connectTime;
 
-        internal readonly ReadBufferManager readBuffer;
-
         private KeepAlive _keepAlive;
-        
-        #endregion
+
+        private DateTime _lastCommunicateTime;
+        #endregion 字段
 
         #region 属性
         /// <summary>
+        /// 内部读取缓冲区
+        /// </summary>
+        public ReadBufferManager ReadBuffer => readBuffer;
+
+        /// <summary>
         /// 套接字调度者
         /// </summary>
-        public ISocketDispatcher SocketDispatcher
-        {
-            get { return _socketDispatcher; }
-        }
+        public ISocketDispatcher SocketDispatcher => _socketDispatcher;
+
         /// <summary>
         /// 会话ID，Socket的操作系统句柄
         /// </summary>
-        public int SessionID
-        {
-            get { return _sessionID; }
-        }
+        public int SessionID => _sessionID;
+
         /// <summary>
         /// 会话连接时间
         /// </summary>
-        public DateTime ConnectTime
-        {
-            get { return _connectTime; }
-        }
+        public DateTime ConnectTime => _connectTime;
+
         /// <summary>
         /// 远程IP终结点
         /// </summary>
-        public IPEndPoint RemoteIPEndPoint
-        {
-            get { return (IPEndPoint)socket.RemoteEndPoint; }
-        }
-        /// <summary>
-        /// 内部读取缓冲区
-        /// </summary>
-        public ReadBufferManager ReadBuffer { get { return readBuffer; } }
+        public IPEndPoint RemoteIPEndPoint => socket.RemoteEndPoint as IPEndPoint;
 
         /// <summary>
         /// Keep-Alive，必须在会话开始前设置（在Initialize中实例化，可在OnInitialized中初始化）
         /// </summary>
-        public KeepAlive KeepAlive { get { return _keepAlive; } }
+        public KeepAlive KeepAlive => _keepAlive;
 
         /// <summary>
         /// 上次通讯时间
         /// </summary>
-        public DateTime LastCommunicateTime { get; private set; }
+        public DateTime LastCommunicateTime => _lastCommunicateTime;
 
-        #endregion
+        #endregion 属性
 
         #region 事件
+
         /// <summary>
         /// 会话初始化，OnSessionInitialized 引发 SessionInitialized 事件。
         /// </summary>
@@ -119,12 +90,14 @@ namespace IceCoffee.Network.Sockets
         /// 会话关闭，OnSessionClosed 引发 SessionClosed 事件。
         /// </summary>
         public event ClosedEventHandler SessionClosed;
-        #endregion
+
+        #endregion 事件
 
         #region 方法
+
         public BaseSession()
         {
-            readBuffer = new ReadBufferManager(this.OnReceived);            
+            readBuffer = new ReadBufferManager(this.OnInternalReceived);
         }
 
         /// <summary>
@@ -141,8 +114,13 @@ namespace IceCoffee.Network.Sockets
         /// <param name="data"></param>
         protected virtual void OnReceived()
         {
-            LastCommunicateTime = DateTime.Now;
             ReceivedData?.Invoke();
+        }
+
+        private void OnInternalReceived()
+        {
+            _lastCommunicateTime = DateTime.Now;
+            OnReceived();
         }
 
         /// <summary>
@@ -150,7 +128,6 @@ namespace IceCoffee.Network.Sockets
         /// </summary>
         protected virtual void OnStarted()
         {
-            LastCommunicateTime = DateTime.Now;
             SessionStarted?.Invoke();
         }
 
@@ -169,12 +146,12 @@ namespace IceCoffee.Network.Sockets
         public virtual void Send(byte[] data)
         {
             _sendData.Invoke((TSession)this, data);
-        } 
+        }
 
         /// <summary>
         /// 关闭会话
         /// </summary>
-        [CatchException(Error = "关闭会话异常")]
+        [CatchException(ErrorMessage = "关闭会话异常")]
         public void Close()
         {
             if (socket != null && socket.Connected)
@@ -196,7 +173,7 @@ namespace IceCoffee.Network.Sockets
         /// </summary>
         /// <param name="socket"></param>
         /// <param name="sessionID"></param>
-        [CatchException(Error = "为会话附加信息异常")]
+        [CatchException(ErrorMessage = "为会话附加信息异常")]
         internal void Attach(Socket socket, int sessionID)
         {
             this.socket = socket;
@@ -208,6 +185,7 @@ namespace IceCoffee.Network.Sockets
                 socket.IOControl(IOControlCode.KeepAliveValues, _keepAlive.GetKeepAliveData(), null);
             }
 
+            _lastCommunicateTime = DateTime.Now;
             OnStarted();
         }
 
@@ -220,31 +198,29 @@ namespace IceCoffee.Network.Sockets
 
             this.socket = null;
             this._sessionID = 0;
-            this._connectTime = default(DateTime);//DateTime.MinValue
-            this.LastCommunicateTime = default;
+            this._connectTime = default;
+            this._lastCommunicateTime = default;
         }
 
         /// <summary>
         /// 初始化
         /// </summary>
-        internal void Initialize(ISocketDispatcher socketDispatcher, 
+        internal void Initialize(ISocketDispatcher socketDispatcher,
             InternalSendDataEventHandler<TSession> internalSendDataEventHandler,
-            Action<SocketAsyncEventArgs> saeaCollectEventHandler,
-            ExceptionCaughtEventHandler exceptionCaughtEventHandler)
+            Func<SocketAsyncEventArgs, bool> saeaCollectEventHandler)
         {
             _keepAlive = new KeepAlive();
             this._socketDispatcher = socketDispatcher;
             this._sendData = internalSendDataEventHandler;
-            this._emitExceptionCaughtSignal = exceptionCaughtEventHandler;
             readBuffer.Initialize(saeaCollectEventHandler, this);
             OnInitialized();
         }
 
-        void IExceptionCaught.EmitSignal(NetworkException e)
+        void IExceptionCaught.EmitSignal(object sender, NetworkException ex)
         {
-            _emitExceptionCaughtSignal.Invoke(e);
+            (_socketDispatcher as IExceptionCaught).EmitSignal(sender, ex);
         }
 
-        #endregion
+        #endregion 方法
     }
 }

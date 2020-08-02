@@ -187,6 +187,8 @@ namespace IceCoffee.Network.Sockets
             Array.Copy(firstItem.Buffer, _readOffset, result, alreadyRemoveCount, firstItem.BytesTransferred - _readOffset);
             alreadyRemoveCount += firstItem.BytesTransferred - _readOffset;
 
+            _collectSaea.Invoke(firstItem);
+
             while (_readBuffer.Count > 0)
             {
                 var item = _readBuffer.Dequeue();
@@ -206,7 +208,6 @@ namespace IceCoffee.Network.Sockets
         /// <para>如果无法从缓冲区读取一整行将返回空的字节数组</para>
         /// <para>此函数无法报告错误；返回空的字节数组可能意味着当前没有可供读取的数据，或者发生错误。</para>
         /// </summary>
-        /// <param name="maxSize"></param>
         /// <returns></returns>
         public byte[] ReadLine()
         {

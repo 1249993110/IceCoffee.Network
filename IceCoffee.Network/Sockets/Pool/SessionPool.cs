@@ -30,8 +30,6 @@ namespace IceCoffee.Network.Sockets.Pool
             Max = int.MaxValue;
 
             IdleTime = 60;
-
-            IsClearOverdue = false;
         }
 
         protected override TSession Create()

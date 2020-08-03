@@ -24,6 +24,7 @@ namespace IceCoffee.Network.Sockets.Pool
             Max = int.MaxValue;
 
             IdleTime = 60;
+            AllIdleTime = 180;
         }
 
         protected override SocketAsyncEventArgs Create()

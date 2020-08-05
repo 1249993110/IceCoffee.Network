@@ -81,7 +81,7 @@ namespace IceCoffee.Network.Sockets
     /// <summary>
     /// 收到数据事件处理器
     /// </summary>
-    public delegate void ReceivedDataEventHandler();
+    public delegate void ReceivedDataEventHandler<TSession>(TSession session) where TSession : BaseSession<TSession>, new();
 
     /// <summary>
     /// 会话开始事件处理器

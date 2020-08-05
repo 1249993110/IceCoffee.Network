@@ -97,7 +97,6 @@
             <summary>
             收到数据时调用
             </summary>
-            <param name="data"></param>
         </member>
         <member name="M:IceCoffee.Network.Sockets.BaseSession`1.OnStarted">
             <summary>
@@ -207,7 +206,7 @@
             初始化事件处理器
             </summary>
         </member>
-        <member name="T:IceCoffee.Network.Sockets.ReceivedDataEventHandler">
+        <member name="T:IceCoffee.Network.Sockets.ReceivedDataEventHandler`1">
             <summary>
             收到数据事件处理器
             </summary>

@@ -79,7 +79,7 @@ namespace IceCoffee.Network.Sockets
         /// <summary>
         /// 收到数据，OnReceivedData 引发 ReceivedData 事件。
         /// </summary>
-        public event ReceivedDataEventHandler ReceivedData;
+        public event ReceivedDataEventHandler<TSession> ReceivedData;
 
         /// <summary>
         /// 会话开始，OnSessionStarted 引发 SessionStarted 事件。
@@ -111,10 +111,9 @@ namespace IceCoffee.Network.Sockets
         /// <summary>
         /// 收到数据时调用
         /// </summary>
-        /// <param name="data"></param>
         protected virtual void OnReceived()
         {
-            ReceivedData?.Invoke();
+            ReceivedData?.Invoke(this as TSession);
         }
 
         private void OnInternalReceived()
@@ -143,9 +142,17 @@ namespace IceCoffee.Network.Sockets
         /// 发送数据
         /// </summary>
         /// <param name="data"></param>
+        [CatchException("发送数据异常")]
         public virtual void Send(byte[] data)
         {
-            _sendData.Invoke(this as TSession, data);
+            if(socket != null)
+            {
+                _sendData.Invoke(this as TSession, data);
+            }
+            else
+            {
+                throw new NetworkException("会话已经关闭");
+            }
         }
 
         /// <summary>

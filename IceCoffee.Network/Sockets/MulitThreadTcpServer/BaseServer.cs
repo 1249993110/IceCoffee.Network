@@ -275,6 +275,7 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpServer
         {
             TSession session = e.UserToken as TSession;
             SocketError socketError = e.SocketError;
+
             if (e.BytesTransferred > 0 && socketError == SocketError.Success)
             {
                 try
@@ -325,8 +326,8 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpServer
                 }
                 else
                 {
-                    CollectSession(session);
-                    throw new NetworkException("从会话列表中移除一个不存在的会话");
+                    //CollectSession(session);
+                    throw new NetworkException("从会话列表中移除一个不存在的会话，请检查事件订阅，会话ID: " + session.SessionID);
                 }
             }
         }

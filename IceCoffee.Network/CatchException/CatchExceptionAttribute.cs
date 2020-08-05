@@ -23,6 +23,11 @@ namespace IceCoffee.Network.CatchException
         {
         }
 
+        public CatchExceptionAttribute(string errorMessage)
+        {
+            ErrorMessage = errorMessage;
+        }
+
         public CatchExceptionAttribute(string errorMessage, CustomExceptionType customExceptionType)
         {
             ErrorMessage = errorMessage;

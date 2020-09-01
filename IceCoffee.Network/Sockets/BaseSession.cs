@@ -118,8 +118,8 @@ namespace IceCoffee.Network.Sockets
 
         private void OnInternalReceived()
         {
-            _lastCommunicateTime = DateTime.Now;
             OnReceived();
+            _lastCommunicateTime = DateTime.Now;
         }
 
         /// <summary>

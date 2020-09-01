@@ -57,7 +57,7 @@ namespace IceCoffee.Network.Sockets
                     object result = formatter.Deserialize(ms);
 
                     // 41是new object()序列化后的长度
-                    if (ms.Length == 41L && result.GetType() == typeof(object))
+                    if (_currentObjLen == 41 && result.GetType() == typeof(object))
                     {
                         if (SocketDispatcher.AsServer)
                         {

@@ -15,7 +15,7 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpClient
     {
     }
 
-    public abstract class BaseClient<TSession> : ISocketDispatcher, IExceptionCaught where TSession : BaseSession<TSession>, new()
+    public abstract class BaseClient<TSession> : ISocketDispatcher, IExceptionCaught, IDisposable where TSession : BaseSession<TSession>, new()
     {
         #region 字段
 
@@ -158,7 +158,6 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpClient
         /// 异常捕获
         /// </summary>
         public event ExceptionCaughtEventHandler ExceptionCaught;
-
         #endregion
 
         #region 方法
@@ -170,7 +169,7 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpClient
             _connectSaea = new SocketAsyncEventArgs();
             _connectSaea.Completed += OnConnectAsyncRequestCompleted;
         }
-        ~BaseClient()
+        public void Dispose()
         {
             Disconnect();
         }
@@ -290,7 +289,7 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpClient
         [CatchException(ErrorMessage = "会话即将关闭异常")]
         private void OnInternalClose(SocketError socketError)
         {
-            if (ConnectionState == ConnectionState.Connected) //已连接
+            if (_connectionState == ConnectionState.Connected) //已连接
             {
                 _session.Close();
 
@@ -307,6 +306,7 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpClient
                     AutoReconnect();
                 }
             }
+            // 这里可能还有问题
         }
 
         [CatchException(ErrorMessage = "异步发送数据异常")]
@@ -365,7 +365,7 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpClient
         private void AutoReconnect()
         {
             OnInternalConnectionStateChanged(ConnectionState.AutoReconnecting);
-            ++_autoReconnectCount;
+            Interlocked.Increment(ref _autoReconnectCount);
             this.Reconnect();
             Task.Factory.StartNew(() =>
             {
@@ -376,7 +376,7 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpClient
                     {
                         if (_connectionState == ConnectionState.Connected)
                         {
-                            _autoReconnectCount = 0;
+                            Interlocked.Exchange(ref _autoReconnectCount, 0);
                             break;
                         }
                         else if (_connectionState == ConnectionState.Connecting)
@@ -388,11 +388,11 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpClient
                     {
                         if (_connectionState != ConnectionState.Connected)
                             OnReconnectDefeated();
-                        _autoReconnectCount = 0;
+                        Interlocked.Exchange(ref _autoReconnectCount, 0);
                         break;
                     }
                     OnInternalConnectionStateChanged(ConnectionState.AutoReconnecting);
-                    ++_autoReconnectCount;
+                    Interlocked.Increment(ref _autoReconnectCount);
                     this.Reconnect();
                 }
             }, TaskCreationOptions.LongRunning);

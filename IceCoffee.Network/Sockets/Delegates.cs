@@ -26,7 +26,6 @@ namespace IceCoffee.Network.Sockets
     /// </summary>
     /// <param name="connectionState"></param>
     public delegate void ConnectionStateChangedEventHandler(ConnectionState connectionState);
-
     #endregion Client
 
     #region Server

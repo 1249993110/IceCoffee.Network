@@ -19,7 +19,7 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpServer
         }
     }
 
-    public abstract class BaseServer<TSession> : ISocketDispatcher, IExceptionCaught where TSession : BaseSession<TSession>, new()
+    public abstract class BaseServer<TSession> : ISocketDispatcher, IExceptionCaught, IDisposable where TSession : BaseSession<TSession>, new()
     {
         #region 字段
 
@@ -137,7 +137,7 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpServer
             _acceptSaea.Completed += OnAcceptAsyncRequestCompleted;
         }
 
-        ~BaseServer()
+        public void Dispose()
         {
             Stop();
         }
@@ -205,11 +205,13 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpServer
             }
         }
 
-        [CatchException(ErrorMessage = "异步接收数据异常")]
+        [CatchException(ErrorMessage = "异步接受客户异常")]
         private void OnAcceptAsyncRequestCompleted(object sender, SocketAsyncEventArgs e)
         {
             Socket socket = e.AcceptSocket;
             SocketError socketError = e.SocketError;
+
+            _acceptEvent.Set();
 
             if (_isListening == false)
             {
@@ -224,8 +226,6 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpServer
                 }
                 else
                 {
-                    _acceptEvent.Set();
-
                     TSession session = _sessionPool.Take();
 
                     int sessionID = socket.Handle.ToInt32();

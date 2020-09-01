@@ -10,7 +10,7 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpClient
         public bool HeartbeatEnable { get; set; }
 
         /// <summary>
-        /// 心跳包发送周期，单位毫秒，默认6,000毫秒
+        /// 心跳包发送周期，单位毫秒，默认60,000毫秒
         /// </summary>
         public int HeartbeatInterval { get; set; } = 60000;
 
@@ -23,8 +23,8 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpClient
 
         protected override void OnConnected()
         {
-            _heartbeat.Enabled = HeartbeatEnable;
             _heartbeat.Interval = HeartbeatInterval;
+            _heartbeat.Enabled = HeartbeatEnable;
             base.OnConnected();
         }
 

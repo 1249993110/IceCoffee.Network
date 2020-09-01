@@ -42,7 +42,7 @@ namespace IceCoffee.Network.CatchException
 
             IExceptionCaught instance = args.Instance as IExceptionCaught;
 
-            System.Diagnostics.Debug.Assert(instance != null);
+            System.Diagnostics.Debug.Assert(instance != null, "实例必须继承IExceptionCaught");
 
             instance.EmitSignal(instance, networkException);
         }

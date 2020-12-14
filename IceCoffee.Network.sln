@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IceCoffee.Network", "IceCof
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IceCoffee.Common", "..\IceCoffee.Common\IceCoffee.Common\IceCoffee.Common.csproj", "{75B3CBEC-45FD-4596-A741-0606E2CA4A04}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test", "Test\Test.csproj", "{FF49F631-D008-4CF4-B2C5-72657449FAF6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTest", "UnitTest\UnitTest.csproj", "{AD87E90A-8D62-467F-9AA2-F26DFA4E5EBB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -23,10 +23,10 @@ Global
 		{75B3CBEC-45FD-4596-A741-0606E2CA4A04}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{75B3CBEC-45FD-4596-A741-0606E2CA4A04}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{75B3CBEC-45FD-4596-A741-0606E2CA4A04}.Release|Any CPU.Build.0 = Release|Any CPU
-		{FF49F631-D008-4CF4-B2C5-72657449FAF6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{FF49F631-D008-4CF4-B2C5-72657449FAF6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{FF49F631-D008-4CF4-B2C5-72657449FAF6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{FF49F631-D008-4CF4-B2C5-72657449FAF6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AD87E90A-8D62-467F-9AA2-F26DFA4E5EBB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AD87E90A-8D62-467F-9AA2-F26DFA4E5EBB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AD87E90A-8D62-467F-9AA2-F26DFA4E5EBB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AD87E90A-8D62-467F-9AA2-F26DFA4E5EBB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,11 +1,15 @@
 ﻿using IceCoffee.Network.CatchException;
 using IceCoffee.Network.Sockets.Primitives;
+using IceCoffee.Network.Sockets.Primitives.TcpSession;
 using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
 
 namespace IceCoffee.Network.Sockets
 {
+    /// <summary>
+    /// 读取缓冲区管理器
+    /// </summary>
     public class ReadBufferManager
     {
         #region 不固定字段,附加session信息需要重置
@@ -31,7 +35,7 @@ namespace IceCoffee.Network.Sockets
         /// <summary>
         /// 当前会话
         /// </summary>
-        private ISession _session;
+        private ITcpSession _session;
 
         private int _readBufferMaxLength = 256;
 
@@ -169,7 +173,7 @@ namespace IceCoffee.Network.Sockets
 
         /// <summary>
         /// <para>从缓冲区读取所有剩余数据，并将其作为字节数组返回。</para>
-        /// <para>此函数无法报告错误；返回空的字节数组可能意味着当前没有可供读取的数据，或者发生错误。</para>
+        /// <para>此方法无法报告错误；返回空的字节数组可能意味着当前没有可供读取的数据，或者发生错误。</para>
         /// </summary>
         /// <returns></returns>
         public byte[] ReadAll()
@@ -263,16 +267,6 @@ namespace IceCoffee.Network.Sockets
             return -1;
         }       
 
-        /// <summary>
-        /// 确定某byte元素是否在读取缓存中，实际使用IndexOf
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public bool Contains(byte value)
-        {
-            return IndexOf(value) != -1;
-        }
-
         #endregion 公开方法
 
         #region 内部方法
@@ -283,7 +277,7 @@ namespace IceCoffee.Network.Sockets
             this._onInternalReceived = onInternalReceived;
         }
 
-        internal void Initialize(Func<SocketAsyncEventArgs, bool> saeaCollectEventHandler, ISession session)
+        internal void Initialize(Func<SocketAsyncEventArgs, bool> saeaCollectEventHandler, ITcpSession session)
         {
             this._collectSaea = saeaCollectEventHandler;
             this._session = session;

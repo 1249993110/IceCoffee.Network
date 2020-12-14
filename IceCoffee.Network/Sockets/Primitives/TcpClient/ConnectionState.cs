@@ -1,4 +1,4 @@
-﻿namespace IceCoffee.Network.Sockets.MulitThreadTcpClient
+﻿namespace IceCoffee.Network.Sockets.Primitives.TcpClient
 {
     /// <summary>
     /// 连接状态

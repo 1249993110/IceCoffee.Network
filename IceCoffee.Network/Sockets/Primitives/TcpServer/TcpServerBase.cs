@@ -9,17 +9,13 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Linq;
+using IceCoffee.Network.Sockets.Primitives.TcpSession;
+using IceCoffee.Network.Sockets.Primitives.Internal;
 
-namespace IceCoffee.Network.Sockets.MulitThreadTcpServer
+namespace IceCoffee.Network.Sockets.Primitives.TcpServer
 {
-    public class BaseServer : BaseServer<BaseSession>
-    {
-        public BaseServer()
-        {
-        }
-    }
-
-    public abstract class BaseServer<TSession> : ISocketDispatcher, IExceptionCaught, IDisposable where TSession : BaseSession<TSession>, new()
+    public abstract class TcpServerBase<TSession> : SocketDispatcherBase, ITcpServer, IExceptionCaught where TSession : TcpSessionBase<TSession>, new()
     {
         #region 字段
 
@@ -49,78 +45,40 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpServer
 
         #region 属性
 
-        /// <summary>
-        /// 获取所有会话
-        /// </summary>
-        public IReadOnlyDictionary<int, TSession> Sessions => _sessions as IReadOnlyDictionary<int, TSession>;
-
-        /// <summary>
-        /// 连接的会话数量
-        /// </summary>
-        public int SessionCount => _sessions.Count;
-
-        /// <summary>
-        /// <para>每次接收数据的缓冲区大小，默认为4096字节/会话</para>
-        /// <para>必须在socket启动前设置。注意此属性与ReadBuffer读取缓冲区是不同的</para>
-        /// </summary>
-        public int ReceiveBufferSize
+        public override int ReceiveBufferSize
         {
             get => _recvBufferSize;
             set => SetBufferSize(ref _recvBufferSize, value);
         }
 
-        /// <summary>
-        /// <para>每次发送数据的缓冲区大小，默认为4096字节/会话</para>
-        /// <para>必须在socket启动前设置。大于此大小的数据包将被作为临时的新缓冲区发送，此过程影响性能</para>
-        /// </summary>
-        public int SendBufferSize
+        public override int SendBufferSize
         {
             get => _sendBufferSize;
             set => SetBufferSize(ref _sendBufferSize, value);
         }
 
-        /// <summary>
-        /// 本地IP终结点
-        /// </summary>
-        public IPEndPoint LocalIPEndPoint => _socketWatcher.LocalEndPoint as IPEndPoint;
+        public override IPEndPoint LocalIPEndPoint => _socketWatcher.LocalEndPoint as IPEndPoint;
 
-        /// <summary>
-        /// 服务端是否正在监听
-        /// </summary>
+        public override bool IsServerSide => true;
+
+        public IReadOnlyDictionary<int, ITcpSession> Sessions => _sessions.ToDictionary(p => p.Key, p => p.Value as ITcpSession);
+
+        public int SessionCount => _sessions.Count;
+
         public bool IsListening => _isListening;
-
-        /// <summary>
-        /// 是否作为服务端
-        /// </summary>
-        public bool AsServer => true;
 
         #endregion 属性
 
         #region 事件
 
-        /// <summary>
-        /// 开始监听，OnStarted 引发 Started 事件。
-        /// </summary>
         public event StartedEventHandler Started;
 
-        /// <summary>
-        /// 停止监听，OnStopped 引发 Started 事件。
-        /// </summary>
         public event StoppedEventHandler Stopped;
 
-        /// <summary>
-        /// 新会话建立，OnNewSessionSetup 引发 Started 事件。
-        /// </summary>
-        public event NewSessionSetupEventHandler<TSession> NewSessionSetup;
+        public event NewSessionSetupEventHandler NewSessionSetup;
 
-        /// <summary>
-        /// 会话结束，OnSessionClosed 引发 Started 事件。
-        /// </summary>
-        public event SessionClosedEventHandler<TSession> SessionClosed;
+        public event SessionClosedEventHandler SessionClosed;
 
-        /// <summary>
-        /// 异常捕获
-        /// </summary>
         public event ExceptionCaughtEventHandler ExceptionCaught;
 
         #endregion 事件
@@ -129,7 +87,7 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpServer
 
         #region 构造方法
 
-        public BaseServer()
+        public TcpServerBase()
         {
             _acceptEvent = new ManualResetEvent(false);
             _sessions = new ConcurrentDictionary<int, TSession>();
@@ -137,28 +95,17 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpServer
             _acceptSaea.Completed += OnAcceptAsyncRequestCompleted;
         }
 
-        public void Dispose()
-        {
-            Stop();
-        }
 
         #endregion 构造方法
 
         #region 私有方法
-
-        [CatchException(ErrorMessage = "设置缓冲区错误", CustomExceptionType = CustomExceptionType.Checked)]
-        private void SetBufferSize(ref int buffer, int value)
-        {
-            if (value < 1 || value > 1048576) //65535
-                throw new ArgumentOutOfRangeException("缓冲区大小范围为：1-1048576");
-            buffer = value;
-        }
-
-        [CatchException(ErrorMessage = "开始监听异常", CustomExceptionType = CustomExceptionType.Checked)]
-        private bool StartListen()
+        [CatchException("开始监听异常", CustomExceptionType.Checked)]
+        private bool InternalStart()
         {
             if (_isListening)
+            {
                 Stop();
+            }
 
             _recvSaeaPool = new SaeaPool(OnRecvAsyncRequestCompleted, _recvBufferSize);
             _sendSaeaPool = new SaeaPool(OnSendAsyncRequestCompleted, _sendBufferSize);
@@ -186,7 +133,7 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpServer
             return _isListening;
         }
 
-        [CatchException(ErrorMessage = "异步接受客户异常")]
+        [CatchException("异步接受客户异常")]
         private void AcceptSocket()
         {
             OnStarted();
@@ -205,7 +152,7 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpServer
             }
         }
 
-        [CatchException(ErrorMessage = "异步接受客户异常")]
+        [CatchException("异步接受客户异常")]
         private void OnAcceptAsyncRequestCompleted(object sender, SocketAsyncEventArgs e)
         {
             Socket socket = e.AcceptSocket;
@@ -222,7 +169,7 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpServer
                 // 异常socket连接
                 if (socketError != SocketError.Success || socket.Connected == false)
                 {
-                    throw new NetworkException("异常socket连接，SocketError：" + socketError.ToString());
+                    throw new NetworkException("异常socket连接，SocketError：" + socketError);
                 }
                 else
                 {
@@ -230,18 +177,16 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpServer
 
                     int sessionID = socket.Handle.ToInt32();
 
+                    if (_sessions.ContainsKey(sessionID))
+                    {
+                        _sessions.TryRemove(sessionID, out _);
+                        throw new NetworkException(string.Format("添加会话错误，sessionID: {0} 已存在", session.SessionID));
+                    }
+
                     SocketAsyncEventArgs receiveSaea = _recvSaeaPool.Take();
 
-                    receiveSaea.UserToken = session;
-
                     session.Attach(socket, sessionID);
-
-                    bool flag = _sessions.ContainsKey(sessionID);
-                    if (flag)
-                    {
-                        TSession tempSession;
-                        _sessions.TryRemove(sessionID, out tempSession);
-                    }
+                    receiveSaea.UserToken = session;
 
                     _sessions.TryAdd(sessionID, session);
 
@@ -258,19 +203,14 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpServer
                     }
                     catch
                     {
-                        OnInternalClose(session, socketError);
+                        OnInternalClose(session, CloseReason.ApplicationError);
                         throw;
-                    }
-
-                    if (flag)
-                    {
-                        throw new NetworkException(string.Format("添加会话错误，sessionID: {0} 已存在", session.SessionID.ToString()));
                     }
                 }
             }
         }
 
-        [CatchException(ErrorMessage = "异步接收数据异常")]
+        [CatchException("异步接收数据异常")]
         private void OnRecvAsyncRequestCompleted(object sender, SocketAsyncEventArgs e)
         {
             TSession session = e.UserToken as TSession;
@@ -285,7 +225,7 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpServer
                     // 服务端主动关闭会话
                     if (session.socket == null)
                     {
-                        OnInternalClose(session, socketError);
+                        OnInternalClose(session, CloseReason.ServerClosing);
                     }
                     else
                     {
@@ -300,18 +240,19 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpServer
                 }
                 catch
                 {
-                    OnInternalClose(session, socketError);
+                    OnInternalClose(session, CloseReason.InternalError);
                     throw;
                 }
             }
             else
             {
-                OnInternalClose(session, socketError);
+                OnInternalClose(session, CloseReason.SocketError);
+                throw new NetworkException("异常socket连接，SocketError：" + socketError);
             }
         }
 
-        [CatchException(ErrorMessage = "会话即将关闭异常")]
-        private void OnInternalClose(TSession session, SocketError socketError)
+        [CatchException("会话即将关闭异常")]
+        private void OnInternalClose(TSession session, CloseReason closeReason)
         {
             if (_isListening) // 不是正在停止监听
             {
@@ -319,8 +260,9 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpServer
 
                 if (_sessions.TryRemove(session.SessionID, out session))
                 {
-                    OnSessionClosed(session, socketError);
-                    session.Detach(socketError);
+                    session.OnClosed(closeReason);
+                    OnSessionClosed(session, closeReason);
+                    session.Detach();
 
                     CollectSession(session);
                 }
@@ -338,31 +280,31 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpServer
             _sessionPool.Put(session);
         }
 
-        [CatchException(ErrorMessage = "异步发送数据异常")]
-        private void OnInternalSend(TSession session, byte[] data)
+        [CatchException("异步发送数据异常")]
+        private void OnInternalSend(ITcpSession session, byte[] data, int offset, int count)
         {
-            SocketAsyncEventArgs sendSaea = _sendSaeaPool.Take();            
-            long dataLen = data.LongLength;
+            Socket socket = (session as TSession).socket;
+            SocketAsyncEventArgs sendSaea = _sendSaeaPool.Take();
 
-            if (dataLen <= _sendBufferSize)//如果data长度小于发送缓冲区大小，此时dataLen应不大于int.Max
+            if (count <= _sendBufferSize)// 如果count小于发送缓冲区大小，此时count应不大于data.Length
             {
                 sendSaea.UserToken = session;
-                Array.Copy(data, 0, sendSaea.Buffer, 0, (int)dataLen);
-                sendSaea.SetBuffer(0, (int)dataLen);
-                if (session.socket.SendAsync(sendSaea) == false)
+                Array.Copy(data, offset, sendSaea.Buffer, 0, count);
+                sendSaea.SetBuffer(0, count);
+                if (socket.SendAsync(sendSaea) == false)
                 {
-                    OnSendAsyncRequestCompleted(session.socket, sendSaea);
+                    OnSendAsyncRequestCompleted(socket, sendSaea);
                 }
             }
-            else//否则创建一个新的BufferList进行发送
+            else// 否则创建一个新的BufferList进行发送
             {
                 SocketAsyncEventArgs temp_sendSaea = new SocketAsyncEventArgs();
                 temp_sendSaea.UserToken = session;
                 temp_sendSaea.Completed += OnSendAsyncRequestCompleted_UseBufferList;
-                temp_sendSaea.BufferList = new ArraySegment<byte>[1] { new ArraySegment<byte>(data) };
-                if (session.socket.SendAsync(temp_sendSaea) == false)
+                temp_sendSaea.BufferList = new ArraySegment<byte>[1] { new ArraySegment<byte>(data, offset, count) };
+                if (socket.SendAsync(temp_sendSaea) == false)
                 {
-                    OnSendAsyncRequestCompleted_UseBufferList(session.socket, temp_sendSaea);
+                    OnSendAsyncRequestCompleted_UseBufferList(socket, temp_sendSaea);
                 }
             }
         }
@@ -370,13 +312,10 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpServer
         private void OnSendAsyncRequestCompleted(object sender, SocketAsyncEventArgs e)
         {
             TSession session = e.UserToken as TSession;
-            if (e.SocketError == SocketError.Success)
+            if (e.SocketError != SocketError.Success)
             {
-                //session.OnSent();
-            }
-            else
-            {
-                OnInternalClose(session, e.SocketError);
+                OnInternalClose(session, CloseReason.SocketError);
+                throw new NetworkException("异常socket连接，SocketError：" + e.SocketError);
             }
             _sendSaeaPool.Put(e);
         }
@@ -384,13 +323,10 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpServer
         private void OnSendAsyncRequestCompleted_UseBufferList(object sender, SocketAsyncEventArgs e)
         {
             TSession session = e.UserToken as TSession;
-            if (e.SocketError == SocketError.Success)
+            if (e.SocketError != SocketError.Success)
             {
-                //session.OnSent();
-            }
-            else
-            {
-                OnInternalClose(session, e.SocketError);
+                OnInternalClose(session, CloseReason.SocketError);
+                throw new NetworkException("异常socket连接，SocketError：" + e.SocketError);
             }
             e.BufferList = null;
             e.Dispose();
@@ -401,94 +337,70 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpServer
         #region 保护方法
 
         /// <summary>
-        /// 当服务端开始监听后调用
+        /// 当服务端开始监听后调用，默认引发相应事件
         /// </summary>
-        virtual protected void OnStarted()
+        protected virtual void OnStarted()
         {
             Started?.Invoke();
         }
 
         /// <summary>
-        /// 当服务端停止监听后调用
+        /// 当服务端停止监听后调用，默认引发相应事件
         /// </summary>
-        virtual protected void OnStopped()
+        protected virtual void OnStopped()
         {
             Stopped?.Invoke();
         }
 
         /// <summary>
-        /// 当新会话建立时调用
+        /// 当新会话建立时调用，默认引发相应事件
         /// </summary>
         /// <param name="session"></param>
-        virtual protected void OnNewSessionSetup(TSession session)
+        protected virtual void OnNewSessionSetup(TSession session)
         {
             NewSessionSetup?.Invoke(session);
         }
 
         /// <summary>
-        /// 当会话关闭时调用
+        /// 当会话关闭时调用，默认引发相应事件
         /// </summary>
         /// <param name="session"></param>
-        /// <param name="closedReason"></param>
-        virtual protected void OnSessionClosed(TSession session, SocketError closedReason)
+        /// <param name="closeReason"></param>
+        protected virtual void OnSessionClosed(TSession session, CloseReason closeReason)
         {
-            SessionClosed?.Invoke(session, closedReason);
+            SessionClosed?.Invoke(session, closeReason);
         }
 
         #endregion 保护方法
 
         #region 公开方法
 
-        /// <summary>
-        /// 开始监听
-        /// </summary>
-        /// <param name="port">监听端口，端口范围为：0-65535</param>
-        /// <returns>成功返回true,否则返回false</returns>
         public bool Start(ushort port)
         {
             _port = port;
-            return StartListen();
+            return InternalStart();
         }
 
-        /// <summary>
-        /// 开始监听
-        /// </summary>
-        /// <param name="ipStr">监听IP地址(字符串形式)，默认为Any</param>
-        /// <param name="port">监听端口，端口范围为：0-65535</param>
-        /// <returns>成功返回true,否则返回false</returns>
-        [CatchException(ErrorMessage = "开始监听异常", CustomExceptionType = CustomExceptionType.Checked)]
+        [CatchException("开始监听异常", CustomExceptionType.Checked)]
         public bool Start(string ipStr, ushort port)
         {
             return Start(IPAddress.Parse(ipStr), port);
         }
 
-        /// <summary>
-        /// 开始监听
-        /// </summary>
-        /// <param name="ipAddress">监听IP地址</param>
-        /// <param name="port">监听端口，端口范围为：0-65535</param>
-        /// <returns>成功返回true,否则返回false</returns>
         public bool Start(IPAddress ipAddress, ushort port)
         {
             _ipAddress = ipAddress;
             _port = port;
-            return StartListen();
+            return InternalStart();
         }
 
-        /// <summary>
-        /// 使用上次开始监听的参数重新开始监听
-        /// </summary>
-        /// <returns>成功返回true,否则返回false</returns>
         public bool Restart()
         {
             Stop();
-            return StartListen();
+            return InternalStart();
         }
 
-        /// <summary>
-        /// 停止监听
-        /// </summary>
-        [CatchException(ErrorMessage = "停止监听异常")]
+        [CatchException("停止监听异常")]
         public void Stop()
         {
             if (_socketWatcher != null && _isListening)
@@ -499,7 +411,12 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpServer
 
                 foreach (var item in _sessions)
                 {
-                    item.Value.Close();
+                    var session = item.Value;
+                    session.Close();
+
+                    session.OnClosed(CloseReason.ServerShutdown);
+                    OnSessionClosed(session, CloseReason.ServerShutdown);
+                    session.Detach();
                 }
 
                 _socketWatcher.Close();
@@ -511,33 +428,37 @@ namespace IceCoffee.Network.Sockets.MulitThreadTcpServer
             }
         }
 
-        /// <summary>
-        /// 关闭会话
-        /// </summary>
-        /// <param name="session"></param>
-        [CatchException(ErrorMessage = "关闭会话错误，sessionID不存在", CustomExceptionType = CustomExceptionType.Checked)]
+        
+        [CatchException("关闭会话错误，sessionID不存在", CustomExceptionType.Checked)]
         public void CloseSession(int sessionID)
         {
             _sessions[sessionID].Close();
         }
 
-        /// <summary>
-        /// 对指定sessionID发送数据
-        /// </summary>
-        /// <param name="data">待发送数据</param>
-        /// <param name="sessionID">sessionID</param>
-        [CatchException(ErrorMessage = "发送数据错误，sessionID不存在")]
-        public void SendByID(byte[] data, int sessionID)
+        [CatchException("发送数据错误，sessionID不存在")]
+        public void SendById(byte[] data, int sessionID)
         {
             _sessions[sessionID].Send(data);
         }
 
+        public override void Dispose()
+        {
+            Stop();
+        }
+        #endregion 公开方法
+
+        #region 其他方法
         void IExceptionCaught.EmitSignal(object sender, NetworkException ex)
+        {
+            EmitExceptionCaughtSignal(sender, ex);
+        }
+
+        internal override void EmitExceptionCaughtSignal(object sender, NetworkException ex)
         {
             ExceptionCaught?.Invoke(sender, ex);
         }
 
-        #endregion 公开方法
+        #endregion
 
         #endregion 方法
     }

@@ -1,8 +1,13 @@
-﻿using System.Net;
+﻿using IceCoffee.Network.CatchException;
+using System;
+using System.Net;
 
 namespace IceCoffee.Network.Sockets.Primitives
 {
-    public interface ISocketDispatcher
+    /// <summary>
+    /// ISocketDispatcher
+    /// </summary>
+    public interface ISocketDispatcher : IDisposable
     {
         /// <summary>
         /// <para>每次接收数据的缓冲区大小，默认为4096字节/会话</para>
@@ -24,6 +29,6 @@ namespace IceCoffee.Network.Sockets.Primitives
         /// <summary>
         /// 是否作为服务端
         /// </summary>
-        bool AsServer { get; }
+        bool IsServerSide { get; }
     }
 }

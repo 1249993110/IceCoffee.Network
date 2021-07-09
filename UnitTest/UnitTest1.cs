@@ -3,6 +3,7 @@ using IceCoffee.Network.Sockets.Primitives.TcpServer;
 using IceCoffee.Network.Sockets.Primitives.TcpSession;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Diagnostics;
+using System.Threading;
 
 namespace UnitTest
 {
@@ -42,7 +43,12 @@ namespace UnitTest
 
             _tcpClient = new TcpClient();
             _tcpClient.ExceptionCaught += _tcpClient_ExceptionCaught;
-            _tcpClient.Connect("localhost", 10000);
+            _tcpClient.Connect("localhost", 10000); 
+            
+            while (true)
+            {
+                Thread.Sleep(20);
+            }
         }
 
         private void _tcpClient_ExceptionCaught(object sender, IceCoffee.Network.CatchException.NetworkException ex)

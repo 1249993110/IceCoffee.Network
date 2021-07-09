@@ -7,7 +7,7 @@ namespace IceCoffee.Network.Sockets.Primitives
     /// <summary>
     /// ISocketDispatcher
     /// </summary>
-    public interface ISocketDispatcher : IDisposable
+    public interface ISocketDispatcherBase : IDisposable
     {
         /// <summary>
         /// <para>每次接收数据的缓冲区大小，默认为4096字节/会话</para>

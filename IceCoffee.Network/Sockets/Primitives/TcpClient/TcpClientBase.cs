@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace IceCoffee.Network.Sockets.Primitives.TcpClient
 {
-    public abstract class TcpClientBase<TSession> : SocketDispatcherBase, ITcpClient, IExceptionCaught where TSession : TcpSessionBase<TSession>, new()
+    public abstract class TcpClientBase<TSession> : SocketDispatcherBase, ITcpClientBase, IExceptionCaught where TSession : TcpSessionBase<TSession>, new()
     {
         #region 字段
 
@@ -258,7 +258,7 @@ namespace IceCoffee.Network.Sockets.Primitives.TcpClient
         }
 
         [CatchException("异步发送数据异常")]
-        private void OnInternalSend(ITcpSession session, byte[] data, int offset, int count)
+        private void OnInternalSend(ITcpSessionBase session, byte[] data, int offset, int count)
         {
             if (count <= _sendBufferSize)// 如果count小于发送缓冲区大小，此时count应不大于data.Length
             {

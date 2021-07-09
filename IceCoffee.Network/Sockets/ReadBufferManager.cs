@@ -35,7 +35,7 @@ namespace IceCoffee.Network.Sockets
         /// <summary>
         /// 当前会话
         /// </summary>
-        private ITcpSession _session;
+        private ITcpSessionBase _session;
 
         private int _readBufferMaxLength = 256;
 
@@ -277,7 +277,7 @@ namespace IceCoffee.Network.Sockets
             this._onInternalReceived = onInternalReceived;
         }
 
-        internal void Initialize(Func<SocketAsyncEventArgs, bool> saeaCollectEventHandler, ITcpSession session)
+        internal void Initialize(Func<SocketAsyncEventArgs, bool> saeaCollectEventHandler, ITcpSessionBase session)
         {
             this._collectSaea = saeaCollectEventHandler;
             this._session = session;

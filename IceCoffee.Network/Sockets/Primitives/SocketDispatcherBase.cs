@@ -12,7 +12,7 @@ namespace IceCoffee.Network.Sockets.Primitives
     /// <summary>
     /// SocketDispatcherBase
     /// </summary>
-    public abstract class SocketDispatcherBase : ISocketDispatcher
+    public abstract class SocketDispatcherBase : ISocketDispatcherBase
     {
         public abstract int ReceiveBufferSize { get; set; }
         public abstract int SendBufferSize { get; set; }

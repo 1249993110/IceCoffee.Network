@@ -91,7 +91,7 @@ namespace IceCoffee.Network.Sockets.Primitives.TcpSession
             isAlive = true;
             _lastCommunicateTime = DateTime.Now;
 
-            while (readBuffer.BytesAvailable > _headSize)
+            while (readBuffer.BytesAvailable >= _headSize)
             {
                 byte[] bufferHead = readBuffer.Read(_headSize);
 

@@ -45,14 +45,14 @@ namespace IceCoffee.Network.Sockets
     /// 新会话建立事件处理器
     /// </summary>
     /// <param name="session"></param>
-    public delegate void NewSessionSetupEventHandler(ITcpSession session);
+    public delegate void NewSessionSetupEventHandler(ITcpSessionBase session);
 
     /// <summary>
     /// 会话关闭事件处理器
     /// </summary>
     /// <param name="session"></param>
     /// <param name="closedReason"></param>
-    public delegate void SessionClosedEventHandler(ITcpSession session, CloseReason closedReason);
+    public delegate void SessionClosedEventHandler(ITcpSessionBase session, CloseReason closedReason);
 
     #endregion Server
 
@@ -65,7 +65,7 @@ namespace IceCoffee.Network.Sockets
     /// <param name="data"></param>
     /// <param name="offset"></param>
     /// <param name="count"></param>
-    internal delegate void InternalSendDataEventHandler(ITcpSession session, byte[] data, int offset, int count);
+    internal delegate void InternalSendDataEventHandler(ITcpSessionBase session, byte[] data, int offset, int count);
 
     /// <summary>
     /// 内部数据接收事件处理器
@@ -80,7 +80,7 @@ namespace IceCoffee.Network.Sockets
     /// <summary>
     /// 收到数据事件处理器
     /// </summary>
-    public delegate void ReceivedDataEventHandler(ITcpSession session);
+    public delegate void ReceivedDataEventHandler(ITcpSessionBase session);
 
     /// <summary>
     /// 会话开始事件处理器

@@ -6,7 +6,7 @@ namespace IceCoffee.Network.Sockets.Primitives.TcpSession
     /// <summary>
     /// ITcpSession
     /// </summary>
-    public interface ITcpSession
+    public interface ITcpSessionBase
     {
         /// <summary>
         /// 内部读取缓冲区
@@ -16,7 +16,7 @@ namespace IceCoffee.Network.Sockets.Primitives.TcpSession
         /// <summary>
         /// 套接字调度者
         /// </summary>
-        ISocketDispatcher SocketDispatcher { get; }
+        ISocketDispatcherBase SocketDispatcher { get; }
 
         /// <summary>
         /// 会话ID，Socket的操作系统句柄

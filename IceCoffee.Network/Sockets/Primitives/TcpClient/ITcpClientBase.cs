@@ -10,7 +10,7 @@ namespace IceCoffee.Network.Sockets.Primitives.TcpClient
     /// <summary>
     /// TcpClient
     /// </summary>
-    public interface ITcpClient : ISocketDispatcher
+    public interface ITcpClientBase : ISocketDispatcherBase
     {
         /// <summary>
         /// 连接状态

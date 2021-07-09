@@ -12,12 +12,12 @@ namespace IceCoffee.Network.Sockets.Primitives.TcpServer
     /// <summary>
     /// ITcpServer
     /// </summary>
-    public interface ITcpServer : ISocketDispatcher
+    public interface ITcpServerBase : ISocketDispatcherBase
     {
         /// <summary>
         /// 获取所有会话
         /// </summary>
-        IReadOnlyDictionary<int, ITcpSession> Sessions { get; }
+        IReadOnlyDictionary<int, ITcpSessionBase> Sessions { get; }
 
         /// <summary>
         /// 连接的会话数量

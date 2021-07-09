@@ -7,7 +7,7 @@ using System.Threading;
 
 namespace IceCoffee.Network.Sockets.Primitives.TcpSession
 {
-    public abstract class TcpSessionBase<TSession> : ITcpSession, IExceptionCaught where TSession : TcpSessionBase<TSession>, new()
+    public abstract class TcpSessionBase<TSession> : ITcpSessionBase, IExceptionCaught where TSession : TcpSessionBase<TSession>, new()
     {
         #region 字段
 
@@ -31,7 +31,7 @@ namespace IceCoffee.Network.Sockets.Primitives.TcpSession
         
         public ReadBufferManager ReadBuffer => readBuffer;
 
-        public ISocketDispatcher SocketDispatcher => _socketDispatcher;
+        public ISocketDispatcherBase SocketDispatcher => _socketDispatcher;
 
         public int SessionID => _sessionID;
 
@@ -95,6 +95,7 @@ namespace IceCoffee.Network.Sockets.Primitives.TcpSession
         }
 
         
+        /// <inheritdoc/>
         public virtual void Send(byte[] data)
         {
             Send(data, 0, data.Length);

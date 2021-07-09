@@ -6,7 +6,7 @@
     <Description>一个简单的、基于SAEA方式实现的tcpsocket网络通讯库</Description>
     <Authors>IceCoffee</Authors>
     <Product>IceCoffee</Product>
-    <Copyright>Copyright (c) 2020 IceCoffee</Copyright>
+    <Copyright>Copyright (c) 2021 IceCoffee</Copyright>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageProjectUrl>https://github.com/1249993110/IceCoffee.Network</PackageProjectUrl>
     <RepositoryUrl>https://github.com/1249993110/IceCoffee.Network</RepositoryUrl>
@@ -18,8 +18,8 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <PackageReference Include="PostSharp.Redist" Version="6.7.12" />
-    <PackageReference Include="PostSharp" Version="6.7.12">
+    <PackageReference Include="PostSharp.Redist" Version="6.8.7" />
+    <PackageReference Include="PostSharp" Version="6.8.7">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
   </ItemGroup>
@@ -32,7 +32,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\IceCoffee.Common\IceCoffee.Common\IceCoffee.Common.csproj" />
+    <PackageReference Include="IceCoffee.Common" Version="1.0.0.22" />
   </ItemGroup>
 
 

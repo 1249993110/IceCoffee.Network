@@ -15,7 +15,7 @@ using IceCoffee.Network.Sockets.Primitives.Internal;
 
 namespace IceCoffee.Network.Sockets.Primitives.TcpServer
 {
-    public abstract class TcpServerBase<TSession> : SocketDispatcherBase, ITcpServer, IExceptionCaught where TSession : TcpSessionBase<TSession>, new()
+    public abstract class TcpServerBase<TSession> : SocketDispatcherBase, ITcpServerBase, IExceptionCaught where TSession : TcpSessionBase<TSession>, new()
     {
         #region 字段
 
@@ -61,7 +61,7 @@ namespace IceCoffee.Network.Sockets.Primitives.TcpServer
 
         public override bool IsServerSide => true;
 
-        public IReadOnlyDictionary<int, ITcpSession> Sessions => _sessions.ToDictionary(p => p.Key, p => p.Value as ITcpSession);
+        public IReadOnlyDictionary<int, ITcpSessionBase> Sessions => _sessions.ToDictionary(p => p.Key, p => p.Value as ITcpSessionBase);
 
         public int SessionCount => _sessions.Count;
 
@@ -96,7 +96,7 @@ namespace IceCoffee.Network.Sockets.Primitives.TcpServer
         }
 
 
-        #endregion 构造方法
+        #endregion
 
         #region 私有方法
         [CatchException("开始监听异常", CustomExceptionType.Checked)]
@@ -281,7 +281,7 @@ namespace IceCoffee.Network.Sockets.Primitives.TcpServer
         }
 
         [CatchException("异步发送数据异常")]
-        private void OnInternalSend(ITcpSession session, byte[] data, int offset, int count)
+        private void OnInternalSend(ITcpSessionBase session, byte[] data, int offset, int count)
         {
             Socket socket = (session as TSession).socket;
             SocketAsyncEventArgs sendSaea = _sendSaeaPool.Take();
